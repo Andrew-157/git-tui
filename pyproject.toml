@@ -64,5 +64,6 @@ exclude = [
 ]
 
 # run `uv tool install .`
+# uv may cache the previous version of code, so run this: `uv tool install --force --reinstall --no-cache .`
 [project.scripts]
 pycheckout = "pycheckout:cli"

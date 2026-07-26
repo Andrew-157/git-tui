@@ -10,6 +10,7 @@ from prompt_toolkit.styles import Style
 from pygit2 import Commit, discover_repository, init_repository
 from pygit2.enums import BranchType
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 
 class PyCheckoutError(Exception):
@@ -80,14 +81,21 @@ class PyCheckout:
 
     def fetch(self):
         # Apparently it is too painful to handle authentication with pygit2, so we will just call `git fetch`
-        proc = subprocess.run(
-            shlex.split(
-                "git fetch origin"
-            ),
-            cwd=self.repository,
-            capture_output=True,
-            check=False,
-        )
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            transient=True,
+            disable=not self.use_tui,
+        ) as progress:
+            progress.add_task(description="Fetching remote branches", total=None)
+            proc = subprocess.run(
+                shlex.split(
+                    "git fetch origin"
+                ),
+                cwd=self.repository,
+                capture_output=True,
+                check=False,
+            )
         if proc.returncode != 0:
             raise PyCheckoutError(f'Failed to fetch: "{proc.stderr.decode()}"')
 
