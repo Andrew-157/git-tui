@@ -1,3 +1,5 @@
+import shlex
+import subprocess
 import sys
 from pathlib import Path
 from typing import Annotated
@@ -76,6 +78,19 @@ class PyCheckout:
         except KeyboardInterrupt:
             sys.exit(0)
 
+    def fetch(self):
+        # Apparently it is too painful to handle authentication with pygit2, so we will just call `git fetch`
+        proc = subprocess.run(
+            shlex.split(
+                "git fetch origin"
+            ),
+            cwd=self.repository,
+            capture_output=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise PyCheckoutError(f'Failed to fetch: "{proc.stderr.decode()}"')
+
     def checkout(self, branch_name: str | None = None):
         if not self._repository:
             raise PyCheckoutError('Cannot checkout to a branch without iniatialized repository')
@@ -87,7 +102,7 @@ class PyCheckout:
             BranchType.LOCAL,
         )
         if not local_branch_obj:
-            self._repository.remotes['origin'].fetch()
+            self.fetch()
             remote_branch_obj = self._repository.lookup_branch(
                 f"origin/{branch_name}",
                 BranchType.REMOTE,
